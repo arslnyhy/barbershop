@@ -1,3 +1,9 @@
 import Link from "next/link"
+import { getSiteSettings } from "@/lib/sanity/content"
+
 export const metadata = { title: "Our story", description: "The story behind CUT / THRU barbershop in Amsterdam." }
-export default function About(){return <main className="min-h-screen px-5 py-28 md:px-10"><Link href="/" className="text-xs tracking-[.2em]">← CUT / THRU</Link><div className="mx-auto max-w-4xl py-28"><p className="text-xs uppercase tracking-[.2em] text-copper">Our story</p><h1 className="display mt-5 text-6xl leading-none md:text-9xl">Made for the<br/><em>in-between.</em></h1><p className="mt-12 max-w-xl text-lg leading-8 text-muted">CUT / THRU is a small, independent barbershop in the heart of Amsterdam. We make space for the details — the right shape, the right conversation, and a little time out of your day.</p><p className="mt-8 max-w-xl text-lg leading-8 text-muted">A good barbershop is part of a city’s rhythm. Come in from the rain, take the weight off, and leave sharper than you arrived.</p></div></main>}
+
+export default async function About() {
+  const settings = await getSiteSettings()
+  return <main className="min-h-screen px-5 py-28 md:px-10"><Link href="/" className="text-xs tracking-[.2em]">← CUT / THRU</Link><div className="mx-auto max-w-4xl py-28"><p className="text-xs uppercase tracking-[.2em] text-copper">{settings.storyEyebrow}</p><h1 className="display mt-5 text-6xl leading-none md:text-9xl">{settings.storyHeading}<br/><em>{settings.storyHeadingEmphasis}</em></h1>{settings.storyParagraphs.map((paragraph, i) => <p key={i} className={`max-w-xl text-lg leading-8 text-muted ${i === 0 ? "mt-12" : "mt-8"}`}>{paragraph}</p>)}</div></main>
+}

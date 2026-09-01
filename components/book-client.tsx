@@ -1,0 +1,29 @@
+"use client"
+import { useState } from "react"
+import Link from "next/link"
+import { createClient } from "@/lib/supabase/client"
+import type { Barber, Service } from "@/lib/sanity/types"
+
+type Props = { services: Service[]; barbers: Barber[] }
+
+export function BookClient({ services, barbers }: Props) {
+  const serviceOptions = services.map((s) => `${s.name} — ${s.price}`)
+  const barberOptions = ["Any available barber", ...barbers.map((b) => b.name)]
+  const times = ["09:00", "10:30", "12:00", "14:00", "15:30", "17:00"]
+
+  const [step, setStep] = useState(1), [done, setDone] = useState(false), [error, setError] = useState(""), [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({ service: "", barber: barberOptions[0], date: "", time: "", name: "", email: "", phone: "", notes: "" })
+  const set = (key: string, value: string) => setForm({ ...form, [key]: value })
+  async function submit(e: React.FormEvent) {
+    e.preventDefault(); setError("")
+    if (step < 7) { setStep(step + 1); return }
+    setSaving(true)
+    const supabase = createClient()
+    if (!supabase) { setSaving(false); setError("Supabase is not configured yet."); return }
+    const { error } = await supabase.from("bookings").insert({ service: form.service, barber: form.barber, booking_date: form.date, booking_time: form.time, customer_name: form.name, customer_email: form.email, customer_phone: form.phone, notes: form.notes || null })
+    setSaving(false)
+    if (error) { setError("We couldn’t save your appointment. Please try again."); return }
+    setDone(true)
+  }
+  return <main className="min-h-screen px-5 py-10 md:px-10"><Link href="/" className="text-xs tracking-[.2em]">← CUT / THRU</Link><div className="mx-auto max-w-2xl py-20"><p className="text-xs uppercase tracking-[.2em] text-copper">Appointment booking · Step {step} of 7</p><div className="mt-5 h-1 bg-line"><div className="h-full bg-copper transition-all" style={{width:`${step/7*100}%`}}/></div>{done?<section className="py-24 text-center"><h1 className="display text-6xl">See you in the chair.</h1><p className="mt-6 text-muted">Your appointment is confirmed. We’ll see you at CUT / THRU.</p></section>:<form onSubmit={submit} className="mt-20">{step===1&&<><h1 className="display text-5xl">Choose your service.</h1><div className="mt-10 grid gap-3">{serviceOptions.map(s=><label key={s} className="border line p-5 has-[:checked]:border-copper"><input required type="radio" name="service" checked={form.service===s} onChange={()=>set("service",s)} className="mr-3 accent-copper"/> {s}</label>)}</div></>}{step===2&&<><h1 className="display text-5xl">Choose your barber.</h1><select required value={form.barber} onChange={e=>set("barber",e.target.value)} className="mt-10 w-full border line bg-ink p-4">{barberOptions.map(b=><option key={b}>{b}</option>)}</select></>}{step===3&&<><h1 className="display text-5xl">Choose a date.</h1><input required value={form.date} onChange={e=>set("date",e.target.value)} type="date" className="mt-10 w-full border line bg-ink p-4"/></>}{step===4&&<><h1 className="display text-5xl">Choose a time.</h1><div className="mt-10 grid grid-cols-3 gap-3">{times.map(t=><label key={t} className="border line p-4 text-center has-[:checked]:border-copper"><input required type="radio" name="time" checked={form.time===t} onChange={()=>set("time",t)} className="sr-only"/>{t}</label>)}</div></>}{step===5&&<><h1 className="display text-5xl">About you.</h1><div className="mt-10 grid gap-4">{[["name","Name","text"],["email","Email","email"],["phone","Phone","tel"]].map(([key,label,type])=><input key={key} required value={form[key as keyof typeof form]} onChange={e=>set(key,e.target.value)} type={type} placeholder={label} className="border line bg-transparent p-4"/>)}</div></>}{step===6&&<><h1 className="display text-5xl">Anything we should know?</h1><textarea value={form.notes} onChange={e=>set("notes",e.target.value)} placeholder="Optional notes" className="mt-10 min-h-40 w-full border line bg-transparent p-4"/></>}{step===7&&<><h1 className="display text-5xl">Confirm your appointment.</h1><p className="mt-8 text-muted">{form.service} with {form.barber} on {form.date} at {form.time}.</p></>}{error&&<p className="mt-5 text-sm text-copper">{error}</p>}<button disabled={saving} className="mt-12 bg-copper px-7 py-4 text-xs font-bold uppercase tracking-widest text-ink">{saving?"Saving…":step===7?"Confirm booking":"Continue →"}</button></form>}</div></main>
+}
